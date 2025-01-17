@@ -2,46 +2,37 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Location-Based AR Video</title>
+    <title>Centered Video in AR</title>
     <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <style>
-        .circle-crop {
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+        }
+        .video-container {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            border-radius: 50%;
-            overflow: hidden;
             width: 300px;
             height: 300px;
-            background: none;
         }
-        .video-container {
+        video {
             width: 100%;
             height: 100%;
+            border-radius: 50%;
         }
     </style>
 </head>
 <body>
-    <a-scene vr-mode-ui="enabled: false" embedded arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
-        <a-camera gps-camera rotation-reader></a-camera>
-        <a-entity gps-entity-place="latitude: YOUR_LATITUDE; longitude: YOUR_LONGITUDE;" position="0 0 0">
-            <a-video src="#circle-video" position="0 1.5 -3" width="3" height="3" material="shader: flat;" rotation="0 0 0"></a-video>
+    <a-scene embedded arjs="sourceType: webcam;">
+        <a-camera></a-camera>
+        <a-entity>
+            <a-video src="https://github.com/Weat-ctrl/TheAwakeningGOB/blob/main/giphy.mp4" position="0 0 -2" width="3" height="3" rotation="0 0 0"></a-video>
         </a-entity>
     </a-scene>
-
-    <div class="circle-crop">
-        <video id="circle-video" class="video-container" src="https://github.com/Weat-ctrl/TheAwakeningGOB/blob/main/giphy.mp4" autoplay loop muted></video>
-    </div>
-
-    <script>
-        window.onload = () => {
-            navigator.geolocation.getCurrentPosition((position) => {
-                const gpsEntity = document.querySelector('[gps-entity-place]');
-                gpsEntity.setAttribute('gps-entity-place', `latitude: ${position.coords.latitude}; longitude: ${position.coords.longitude};`);
-            });
-        };
-    </script>
 </body>
 </html>
