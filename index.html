@@ -4,14 +4,19 @@
     <meta charset="utf-8">
     <title>Centered Video in AR</title>
     <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <a-scene embedded arjs="sourceType: webcam;">
         <a-camera></a-camera>
-        <a-entity>
-            <a-video src="https://weat-ctrl.github.io/TheAwakeningGOB/giphy.mp4" position="0 0 -2" width="3" height="3" rotation="0 0 0"></a-video>
+        <a-entity position="0 1 -3">
+            <a-video src="#circle-video" width="1" height="1" rotation="0 0 0"></a-video>
         </a-entity>
     </a-scene>
+
+    <div class="video-container">
+        <video id="circle-video" src="https://weat-ctrl.github.io/TheAwakeningGOB/giphy.mp4" autoplay loop muted></video>
+    </div>
 </body>
 </html>
