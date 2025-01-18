@@ -2,14 +2,17 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Centered Video in AR</title>
+    <title>Persistent AR Tracking</title>
     <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <a-scene embedded arjs="sourceType: webcam;">
-        <a-camera></a-camera>
+        <a-camera gps-camera rotation-reader></a-camera>
+        <a-entity gps-entity-place="latitude: YOUR_LATITUDE; longitude: YOUR_LONGITUDE;" position="0 0 0">
+            <a-video src="https://weat-ctrl.github.io/TheAwakeningGOB/giphy.mp4" position="0 1.5 -3" width="1" height="1" rotation="0 0 0"></a-video>
+        </a-entity>
     </a-scene>
 
     <div class="video-container">
