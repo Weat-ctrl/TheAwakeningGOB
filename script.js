@@ -1,84 +1,74 @@
-// Initialize variables
-let handLandmarker;
-let video;
-let canvas;
-let canvasCtx;
+const videoElement = document.getElementById('webcam');
+const canvasElement = document.getElementById('output_canvas');
+const canvasCtx = canvasElement.getContext('2d');
 
-// Initialize the Hand Landmarker
-async function initializeHandLandmarker() {
-    const vision = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
-    );
-    handLandmarker = await HandLandmarker.createFromOptions(vision, {
-        baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-            delegate: "GPU"
+// Initialize the hand landmarker
+const hands = new Hands({
+  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+});
+
+hands.setOptions({
+  maxNumHands: 1, // Detect only one hand
+  modelComplexity: 1,
+  minDetectionConfidence: 0.5,
+  minTrackingConfidence: 0.5,
+});
+
+hands.onResults(onResults);
+
+// Process the video stream
+function onResults(results) {
+  canvasCtx.save();
+  canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+  canvasCtx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+
+  if (results.multiHandLandmarks) {
+    for (const landmarks of results.multiHandLandmarks) {
+      drawLandmarks(canvasCtx, landmarks, { color: '#FF0000', lineWidth: 2 });
+    }
+  }
+  canvasCtx.restore();
+}
+
+// Start the front camera
+async function startCamera() {
+  const constraints = {
+    video: {
+      facingMode: 'user', // Use the front camera
+      width: window.innerWidth, // Match screen width
+      height: window.innerHeight, // Match screen height
+    },
+  };
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    videoElement.srcObject = stream;
+
+    // Resize canvas to match video dimensions
+    videoElement.onloadedmetadata = () => {
+      canvasElement.width = videoElement.videoWidth;
+      canvasElement.height = videoElement.videoHeight;
+
+      const camera = new Camera(videoElement, {
+        onFrame: async () => {
+          await hands.send({ image: videoElement });
         },
-        runningMode: "VIDEO",
-        numHands: 2
-    });
+        width: videoElement.videoWidth,
+        height: videoElement.videoHeight,
+      });
+
+      camera.start();
+    };
+  } catch (error) {
+    console.error('Error starting camera:', error);
+    alert(`Failed to start camera: ${error.message}`);
+  }
 }
 
-// Start the webcam and process frames
-async function startWebcam() {
-    video = document.getElementById("webcam");
-    canvas = document.getElementById("output_canvas");
-    canvasCtx = canvas.getContext("2d");
+startCamera();
 
-    // Get user media (webcam)
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = stream;
-    } catch (error) {
-        console.error("Error accessing the webcam:", error);
-        alert("Unable to access the webcam. Please ensure your camera is connected and permissions are granted.");
-        return;
-    }
-
-    // Wait for the video to load
-    video.addEventListener("loadeddata", () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        processFrame();
-    });
-}
-
-// Process each video frame
-async function processFrame() {
-    if (!handLandmarker || !video.videoWidth || !video.videoHeight) {
-        requestAnimationFrame(processFrame);
-        return;
-    }
-
-    // Detect hand landmarks
-    const results = handLandmarker.detectForVideo(video, Date.now());
-
-    // Draw landmarks on the canvas
-    canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-    if (results.landmarks) {
-        for (const landmarks of results.landmarks) {
-            drawLandmarks(landmarks);
-        }
-    }
-
-    // Request the next frame
-    requestAnimationFrame(processFrame);
-}
-
-// Draw landmarks on the canvas
-function drawLandmarks(landmarks) {
-    canvasCtx.fillStyle = "#FF0000";
-    for (const landmark of landmarks) {
-        const x = landmark.x * canvas.width;
-        const y = landmark.y * canvas.height;
-        canvasCtx.beginPath();
-        canvasCtx.arc(x, y, 5, 0, 2 * Math.PI);
-        canvasCtx.fill();
-    }
-}
-
-// Initialize everything
-(async function main() {
-    await initializeHandLandmarker();
-    await startWebcam();
-})();
+// Handle window resizing
+window.addEventListener('resize', () => {
+  canvasElement.width = window.innerWidth;
+  canvasElement.height = window.innerHeight;
+});
