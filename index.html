@@ -1,105 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Hand Landmarker Demo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediaPipe Hand Landmarker Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Load MediaPipe Hand Landmarker -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/vision_bundle.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-        }
-        video {
-            width: 640px;
-            height: 480px;
-            border: 2px solid #ccc;
-        }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-    </style>
 </head>
 <body>
     <h1>MediaPipe Hand Landmarker Demo</h1>
-    <video id="webcam" autoplay></video>
-    <canvas id="output_canvas"></canvas>
-    <script>
-        // Initialize variables
-        let handLandmarker;
-        let video;
-        let canvas;
-        let canvasCtx;
-
-        // Initialize the Hand Landmarker
-        async function initializeHandLandmarker() {
-            const vision = await FilesetResolver.forVisionTasks(
-                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision/wasm"
-            );
-            handLandmarker = await HandLandmarker.createFromOptions(vision, {
-                baseOptions: {
-                    modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
-                    delegate: "GPU"
-                },
-                runningMode: "VIDEO",
-                numHands: 2
-            });
-        }
-
-        // Start the webcam and process frames
-        async function startWebcam() {
-            video = document.getElementById("webcam");
-            canvas = document.getElementById("output_canvas");
-            canvasCtx = canvas.getContext("2d");
-
-            // Get user media (webcam)
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-
-            // Wait for the video to load
-            video.addEventListener("loadeddata", () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                processFrame();
-            });
-        }
-
-        // Process each video frame
-        async function processFrame() {
-            if (!handLandmarker) return;
-
-            // Detect hand landmarks
-            const results = handLandmarker.detectForVideo(video, Date.now());
-
-            // Draw landmarks on the canvas
-            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
-            if (results.landmarks) {
-                for (const landmarks of results.landmarks) {
-                    drawLandmarks(landmarks);
-                }
-            }
-
-            // Request the next frame
-            requestAnimationFrame(processFrame);
-        }
-
-        // Draw landmarks on the canvas
-        function drawLandmarks(landmarks) {
-            canvasCtx.fillStyle = "#FF0000";
-            for (const landmark of landmarks) {
-                const x = landmark.x * canvas.width;
-                const y = landmark.y * canvas.height;
-                canvasCtx.beginPath();
-                canvasCtx.arc(x, y, 5, 0, 2 * Math.PI);
-                canvasCtx.fill();
-            }
-        }
-
-        // Initialize everything
-        (async function main() {
-            await initializeHandLandmarker();
-            await startWebcam();
-        })();
-    </script>
+    <div class="container">
+        <video id="webcam" autoplay></video>
+        <canvas id="output_canvas"></canvas>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
