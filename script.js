@@ -35,8 +35,6 @@ async function startCamera() {
   const constraints = {
     video: {
       facingMode: 'user', // Use the front camera
-      width: window.innerWidth, // Match screen width
-      height: window.innerHeight, // Match screen height
     },
   };
 
@@ -44,17 +42,29 @@ async function startCamera() {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     videoElement.srcObject = stream;
 
-    // Resize canvas to match video dimensions
+    // Wait for the video to load
     videoElement.onloadedmetadata = () => {
-      canvasElement.width = videoElement.videoWidth;
-      canvasElement.height = videoElement.videoHeight;
+      // Set canvas size to match the video's aspect ratio
+      const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      if (screenWidth / screenHeight > aspectRatio) {
+        // Screen is wider than the video
+        canvasElement.width = screenHeight * aspectRatio;
+        canvasElement.height = screenHeight;
+      } else {
+        // Screen is taller than the video
+        canvasElement.width = screenWidth;
+        canvasElement.height = screenWidth / aspectRatio;
+      }
 
       const camera = new Camera(videoElement, {
         onFrame: async () => {
           await hands.send({ image: videoElement });
         },
-        width: videoElement.videoWidth,
-        height: videoElement.videoHeight,
+        width: canvasElement.width,
+        height: canvasElement.height,
       });
 
       camera.start();
@@ -69,6 +79,17 @@ startCamera();
 
 // Handle window resizing
 window.addEventListener('resize', () => {
-  canvasElement.width = window.innerWidth;
-  canvasElement.height = window.innerHeight;
+  const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+  const screenWidth = window.innerWidth;
+  const screenHeight = window.innerHeight;
+
+  if (screenWidth / screenHeight > aspectRatio) {
+    // Screen is wider than the video
+    canvasElement.width = screenHeight * aspectRatio;
+    canvasElement.height = screenHeight;
+  } else {
+    // Screen is taller than the video
+    canvasElement.width = screenWidth;
+    canvasElement.height = screenWidth / aspectRatio;
+  }
 });
