@@ -12,6 +12,10 @@ let hitCount = 0;
 const maxHits = 5;
 let smokeParticles;
 
+// UI Elements
+const hitCounter = document.getElementById('hit-counter');
+const resetButton = document.getElementById('reset-button');
+
 // Load the pigeon model
 const gltfLoader = new THREE.GLTFLoader();
 gltfLoader.load('https://raw.githubusercontent.com/Weat-ctrl/TheAwakeningGOB/Pigeon.gltf', (gltf) => {
@@ -121,7 +125,7 @@ function hitPigeon() {
   if (hitCount >= maxHits) return;
 
   hitCount++;
-  console.log(`Hit count: ${hitCount}`);
+  hitCounter.textContent = `Hits: ${hitCount}`; // Update hit counter
 
   // Play HitReact animation
   const { mixer, hitReactAction } = pigeonModel.userData;
@@ -158,6 +162,15 @@ function addSmokeEffect() {
 
   smokeParticles.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
 }
+
+// Reset the game
+resetButton.addEventListener('click', () => {
+  hitCount = 0;
+  hitCounter.textContent = `Hits: ${hitCount}`;
+  pigeonModel.visible = true;
+  const { flyingIdleAction } = pigeonModel.userData;
+  flyingIdleAction.reset().play();
+});
 
 // Render loop
 function animate() {
