@@ -1,4 +1,9 @@
+// script.js
+
 document.addEventListener("DOMContentLoaded", () => {
+  // Initialize MobileConsole
+  mobileConsole.init();
+
   const pigeon = document.getElementById("pigeon");
 
   // Initial animation
