@@ -21,6 +21,21 @@ document.querySelector('a-scene').addEventListener('loaded', () => {
   pigeonEntity = document.getElementById('pigeon');
   setupSmokeEffect();
 
+  // Override AR.js camera constraints to use the front camera
+  const scene = document.querySelector('a-scene');
+  const arjsSystem = scene.systems['arjs'];
+  const arjsSource = arjsSystem.source;
+
+  // Set constraints for the front camera
+  arjsSource._getUserMediaConstraints = {
+    video: {
+      facingMode: 'user', // Use the front camera
+    },
+  };
+
+  // Reinitialize the AR.js source with the new constraints
+  arjsSource.init();
+
   // Get user's location and place the pigeon
   getUserLocation();
 });
@@ -57,7 +72,7 @@ function placePigeon(latitude, longitude) {
 function setupSmokeEffect() {
   const scene = document.querySelector('a-scene').object3D;
   const textureLoader = new THREE.TextureLoader();
-  const smokeTexture = textureLoader.load('https://raw.githubusercontent.com/Weat-ctrl/TheAwakeningGOB/smoke.png');
+  const smokeTexture = textureLoader.load('https://raw.githubusercontent.com/Weat-ctrl/TheAwakeningGOB/smoke.png'); // Update path to smoke texture
 
   const smokeGeometry = new THREE.BufferGeometry();
   const smokeMaterial = new THREE.PointsMaterial({
