@@ -4,20 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Three.js + WebRTC + MediaPipe Hands</title>
-  <link rel="stylesheet" href="https://raw.githubusercontent.com/Weat-ctrl/TheAwakeningGOB/styles.css"> <!-- Link to your CSS file -->
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+  </style>
 </head>
 <body>
-  <!-- UI Elements -->
-  <div class="overlay">
-    <div id="hit-counter">Hits: 0</div>
-    <button id="reset-button">Reset</button>
-  </div>
-
-  <!-- Three.js Canvas (automatically added by Three.js) -->
-
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
