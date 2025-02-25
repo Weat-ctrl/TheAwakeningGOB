@@ -6,52 +6,40 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 // Variables
-let pigeonModel;
-let videoTexture;
+let cube;
 let hitCount = 0;
 const maxHits = 5;
 let smokeParticles;
 
-// UI Elements
-const hitCounter = document.getElementById('hit-counter');
-const resetButton = document.getElementById('reset-button');
+// Create a cube
+const cubeGeometry = new THREE.BoxGeometry(1, 1, 1);
+const cubeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+cube.position.set(0, 0, -2); // Position the cube
+scene.add(cube);
 
-// Load the pigeon model
-const gltfLoader = new THREE.GLTFLoader();
-gltfLoader.load('https://raw.githubusercontent.com/Weat-ctrl/TheAwakeningGOB/Pigeon.gltf', (gltf) => {
-  pigeonModel = gltf.scene;
-  pigeonModel.scale.set(0.1, 0.1, 0.1); // Adjust scale
-  pigeonModel.position.set(0, 0, -2); // Position the model
-  scene.add(pigeonModel);
+// Set up Three.js particle system
+function setupParticleSystem() {
+  const particleCount = 100;
+  const particles = new THREE.BufferGeometry();
+  const particlePositions = new Float32Array(particleCount * 3);
 
-  // Set up animations
-  const animations = gltf.animations;
-  const mixer = new THREE.AnimationMixer(pigeonModel);
-  const flyingIdleAction = mixer.clipAction(animations.find((clip) => clip.name === 'Flying_Idle'));
-  const hitReactAction = mixer.clipAction(animations.find((clip) => clip.name === 'HitReact'));
-  const deathAction = mixer.clipAction(animations.find((clip) => clip.name === 'Death'));
+  for (let i = 0; i < particleCount; i++) {
+    particlePositions[i * 3] = (Math.random() - 0.5) * 2; // x
+    particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 2; // y
+    particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 2; // z
+  }
 
-  flyingIdleAction.play(); // Start with Flying_Idle animation
+  particles.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
 
-  // Store animations for later use
-  pigeonModel.userData = { mixer, flyingIdleAction, hitReactAction, deathAction };
-});
-
-// Set up Three.js smoke effect
-function setupSmokeEffect() {
-  const textureLoader = new THREE.TextureLoader();
-  const smokeTexture = textureLoader.load('https://raw.githubusercontent.com/Weat-ctrl/TheAwakeningGOB/smoke.png'); // Update path to smoke texture
-
-  const smokeGeometry = new THREE.BufferGeometry();
-  const smokeMaterial = new THREE.PointsMaterial({
+  const particleMaterial = new THREE.PointsMaterial({
     size: 0.1,
-    map: smokeTexture,
+    color: 0x00aaff, // Blue color
     transparent: true,
     opacity: 0.5,
-    color: 0x00aaff, // Blue color
   });
 
-  smokeParticles = new THREE.Points(smokeGeometry, smokeMaterial);
+  smokeParticles = new THREE.Points(particles, particleMaterial);
   scene.add(smokeParticles);
 }
 
@@ -64,7 +52,7 @@ async function startFrontCamera() {
   video.play();
 
   // Create a texture from the video feed
-  videoTexture = new THREE.VideoTexture(video);
+  const videoTexture = new THREE.VideoTexture(video);
   const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
   const videoGeometry = new THREE.PlaneGeometry(16, 9); // Adjust aspect ratio as needed
   const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
@@ -100,8 +88,10 @@ async function startFrontCamera() {
 function onResults(results) {
   if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
     const landmarks = results.multiHandLandmarks[0];
+
+    // Check for peace sign gesture
     if (isPeaceSign(landmarks)) {
-      hitPigeon();
+      hitCube();
     }
   }
 }
@@ -120,66 +110,50 @@ function isPeaceSign(landmarks) {
   );
 }
 
-// Hit the pigeon
-function hitPigeon() {
+// Hit the cube
+function hitCube() {
   if (hitCount >= maxHits) return;
 
   hitCount++;
-  hitCounter.textContent = `Hits: ${hitCount}`; // Update hit counter
+  console.log(`Hit count: ${hitCount}`);
 
-  // Play HitReact animation
-  const { mixer, hitReactAction } = pigeonModel.userData;
-  hitReactAction.reset().play();
+  // Change cube color to red temporarily
+  cube.material.color.set(0xff0000);
+  setTimeout(() => {
+    cube.material.color.set(0x00ff00); // Reset color
+  }, 200);
 
-  // Add smoke effect
-  addSmokeEffect();
+  // Add particle effect
+  addParticleEffect();
 
-  // On fifth hit, play Death animation and remove pigeon
+  // On fifth hit, remove the cube
   if (hitCount === maxHits) {
     setTimeout(() => {
-      const { deathAction } = pigeonModel.userData;
-      deathAction.reset().play();
-      setTimeout(() => {
-        pigeonModel.visible = false;
-      }, 2000); // Wait for Death animation to finish
-    }, 1000); // Wait for HitReact animation to finish
+      cube.visible = false;
+    }, 1000);
   }
 }
 
-// Add smoke effect
-function addSmokeEffect() {
-  const smokePosition = pigeonModel.position.clone();
-  smokePosition.y += 0.5; // Adjust height
+// Add particle effect
+function addParticleEffect() {
+  const positions = smokeParticles.geometry.attributes.position.array;
 
-  const vertices = [];
-  for (let i = 0; i < 100; i++) {
-    vertices.push(
-      smokePosition.x + (Math.random() - 0.5) * 0.5,
-      smokePosition.y + Math.random() * 0.5,
-      smokePosition.z + (Math.random() - 0.5) * 0.5
-    );
+  for (let i = 0; i < positions.length; i += 3) {
+    positions[i] = cube.position.x + (Math.random() - 0.5) * 2; // x
+    positions[i + 1] = cube.position.y + (Math.random() - 0.5) * 2; // y
+    positions[i + 2] = cube.position.z + (Math.random() - 0.5) * 2; // z
   }
 
-  smokeParticles.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  smokeParticles.geometry.attributes.position.needsUpdate = true;
 }
-
-// Reset the game
-resetButton.addEventListener('click', () => {
-  hitCount = 0;
-  hitCounter.textContent = `Hits: ${hitCount}`;
-  pigeonModel.visible = true;
-  const { flyingIdleAction } = pigeonModel.userData;
-  flyingIdleAction.reset().play();
-});
 
 // Render loop
 function animate() {
   requestAnimationFrame(animate);
 
-  // Update animations
-  if (pigeonModel && pigeonModel.userData.mixer) {
-    pigeonModel.userData.mixer.update(0.0167); // Update animations (delta time in seconds)
-  }
+  // Rotate the cube (optional)
+  cube.rotation.x += 0.01;
+  cube.rotation.y += 0.01;
 
   // Render the scene
   renderer.render(scene, camera);
@@ -187,7 +161,7 @@ function animate() {
 
 // Start the front camera and animation
 startFrontCamera();
-setupSmokeEffect();
+setupParticleSystem();
 animate();
 
 // Handle window resizing
