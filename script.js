@@ -20,7 +20,7 @@ scene.add(cube);
 
 // Set up Three.js particle system
 function setupParticleSystem() {
-  const particleCount = 100;
+  const particleCount = 50; // Reduced from 100
   const particles = new THREE.BufferGeometry();
   const particlePositions = new Float32Array(particleCount * 3);
 
@@ -45,7 +45,14 @@ function setupParticleSystem() {
 
 // Access the front camera using WebRTC
 async function startFrontCamera() {
-  const constraints = { video: { facingMode: 'user' } }; // Use 'environment' for rear camera
+  const constraints = {
+    video: {
+      facingMode: 'user',
+      width: 640, // Lower resolution
+      height: 480,
+      frameRate: 15, // Lower frame rate
+    },
+  };
   const stream = await navigator.mediaDevices.getUserMedia(constraints);
   const video = document.createElement('video');
   video.srcObject = stream;
@@ -66,7 +73,7 @@ async function startFrontCamera() {
 
   hands.setOptions({
     maxNumHands: 1,
-    modelComplexity: 1,
+    modelComplexity: 0, // Use 0 for faster performance
     minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5,
   });
@@ -74,9 +81,15 @@ async function startFrontCamera() {
   hands.onResults(onResults);
 
   // Start processing the video feed
+  let lastFrameTime = 0;
+  const frameRate = 15; // Process 15 frames per second
   const camera = new Camera(video, {
     onFrame: async () => {
-      await hands.send({ image: video });
+      const now = performance.now();
+      if (now - lastFrameTime >= 1000 / frameRate) {
+        await hands.send({ image: video });
+        lastFrameTime = now;
+      }
     },
     width: 640,
     height: 480,
