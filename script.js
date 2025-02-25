@@ -68,7 +68,7 @@ async function startFrontCamera() {
   const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
   const videoGeometry = new THREE.PlaneGeometry(16, 9); // Adjust aspect ratio as needed
   const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
-  videoMesh.position.set(0, 0, -5); // Position the video feed
+  videoMesh.position.set(0, 0, -10); // Move the camera feed plane further back
   scene.add(videoMesh);
 
   // Initialize MediaPipe Hands
