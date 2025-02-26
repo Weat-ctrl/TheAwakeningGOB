@@ -5,6 +5,11 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+// Add lighting
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(1, 1, 1).normalize();
+scene.add(light);
+
 // Variables
 let paperPlane;
 let obstacles = [];
@@ -39,6 +44,7 @@ function createPaperPlane() {
   paperPlane = new THREE.Mesh(geometry, paperMaterial);
   paperPlane.position.set(0, 0, 5); // Start position
   scene.add(paperPlane);
+  console.log("Paper plane added to scene");
 }
 
 // Create procedural obstacles
@@ -52,6 +58,7 @@ function createObstacle() {
   );
   obstacles.push(obstacle);
   scene.add(obstacle);
+  console.log("Obstacle added to scene");
 }
 
 // Create energy spheres
@@ -65,6 +72,7 @@ function createEnergySphere() {
   );
   energySpheres.push(sphere);
   scene.add(sphere);
+  console.log("Energy sphere added to scene");
 }
 
 // Check for collisions
@@ -109,12 +117,14 @@ function activateShield() {
   isShieldActive = true;
   shieldEndTime = Date.now() + 5000; // Shield lasts 5 seconds
   paperPlane.material = new THREE.MeshBasicMaterial({ color: 0xffd700 }); // Golden glow
+  console.log("Shield activated");
 }
 
 // Deactivate shield
 function deactivateShield() {
   isShieldActive = false;
   paperPlane.material = paperMaterial; // Restore paper material
+  console.log("Shield deactivated");
 }
 
 // Explode the plane
@@ -145,6 +155,7 @@ function explodePlane() {
   const explosion = new THREE.Points(particles, particleMaterial);
   explosion.position.copy(paperPlane.position);
   scene.add(explosion);
+  console.log("Explosion created");
 
   setTimeout(() => {
     scene.remove(explosion);
@@ -158,6 +169,7 @@ function restartGame() {
   isGameOver = false;
   createPaperPlane();
   flashPlane();
+  console.log("Game restarted");
 }
 
 // Flash the plane three times
@@ -185,7 +197,10 @@ gestureRecognizer.setOptions({
   minTrackingConfidence: 0.5,
 });
 
-gestureRecognizer.onResults(onResults);
+gestureRecognizer.onResults((results) => {
+  console.log("Gesture results:", results);
+  onResults(results);
+});
 
 // Handle gesture results
 function onResults(results) {
@@ -240,3 +255,8 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Debugging logs
+console.log("Camera position:", camera.position);
+console.log("Camera rotation:", camera.rotation);
+console.log("Scene children:", scene.children);
