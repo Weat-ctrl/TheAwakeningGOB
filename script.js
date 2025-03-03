@@ -75,116 +75,6 @@ function createEnergySphere() {
   console.log("Energy sphere added to scene");
 }
 
-// Check for collisions
-function checkCollisions() {
-  const planeBox = new THREE.Box3().setFromObject(paperPlane);
-
-  // Check collisions with obstacles
-  obstacles.forEach((obstacle, index) => {
-    const obstacleBox = new THREE.Box3().setFromObject(obstacle);
-    if (planeBox.intersectsBox(obstacleBox)) {
-      if (isShieldActive) {
-        scene.remove(obstacle);
-        obstacles.splice(index, 1);
-      } else {
-        lives--;
-        scene.remove(obstacle);
-        obstacles.splice(index, 1);
-        if (lives <= 0) {
-          explodePlane();
-        }
-      }
-    }
-  });
-
-  // Check collisions with energy spheres
-  energySpheres.forEach((sphere, index) => {
-    const sphereBox = new THREE.Box3().setFromObject(sphere);
-    if (planeBox.intersectsBox(sphereBox)) {
-      if (Math.random() > 0.5) {
-        velocity.z -= 0.05; // Speed boost
-      } else {
-        activateShield();
-      }
-      scene.remove(sphere);
-      energySpheres.splice(index, 1);
-    }
-  });
-}
-
-// Activate shield
-function activateShield() {
-  isShieldActive = true;
-  shieldEndTime = Date.now() + 5000; // Shield lasts 5 seconds
-  paperPlane.material = new THREE.MeshBasicMaterial({ color: 0xffd700 }); // Golden glow
-  console.log("Shield activated");
-}
-
-// Deactivate shield
-function deactivateShield() {
-  isShieldActive = false;
-  paperPlane.material = paperMaterial; // Restore paper material
-  console.log("Shield deactivated");
-}
-
-// Explode the plane
-function explodePlane() {
-  isGameOver = true;
-  scene.remove(paperPlane);
-
-  // Create explosion particles
-  const particleCount = 100;
-  const particles = new THREE.BufferGeometry();
-  const particlePositions = new Float32Array(particleCount * 3);
-
-  for (let i = 0; i < particleCount; i++) {
-    particlePositions[i * 3] = (Math.random() - 0.5) * 2; // x
-    particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 2; // y
-    particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 2; // z
-  }
-
-  particles.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-
-  const particleMaterial = new THREE.PointsMaterial({
-    size: 0.1,
-    color: 0xff0000, // Red color
-    transparent: true,
-    opacity: 0.5,
-  });
-
-  const explosion = new THREE.Points(particles, particleMaterial);
-  explosion.position.copy(paperPlane.position);
-  scene.add(explosion);
-  console.log("Explosion created");
-
-  setTimeout(() => {
-    scene.remove(explosion);
-    restartGame();
-  }, 2000); // Restart after 2 seconds
-}
-
-// Restart the game
-function restartGame() {
-  lives = 3;
-  isGameOver = false;
-  createPaperPlane();
-  flashPlane();
-  console.log("Game restarted");
-}
-
-// Flash the plane three times
-function flashPlane() {
-  let flashCount = 0;
-  const flashInterval = setInterval(() => {
-    paperPlane.visible = !paperPlane.visible;
-    flashCount++;
-    if (flashCount >= 6) {
-      clearInterval(flashInterval);
-      paperPlane.visible = true;
-    }
-  }, 200);
-}
-
 // Initialize MediaPipe Gesture Recognizer
 const gestureRecognizer = new GestureRecognizer({
   locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/gesture_recognizer/${file}`,
@@ -202,22 +92,7 @@ gestureRecognizer.onResults((results) => {
   onResults(results);
 });
 
-// Handle gesture results
-function onResults(results) {
-  if (results.gestures && results.gestures.length > 0) {
-    const gesture = results.gestures[0][0].categoryName;
-
-    if (gesture === 'Open_Palm') {
-      velocity.add(liftForce); // Glide up
-    } else if (gesture === 'Closed_Fist') {
-      velocity.add(gravity); // Glide down
-    } else if (gesture === 'Thumb_Up') {
-      velocity.x += 0.01; // Move right
-    } else if (gesture === 'Victory') {
-      velocity.x -= 0.01; // Move left
-    }
-  }
-}
+console.log("Gesture Recognizer initialized:", gestureRecognizer);
 
 // Start the game
 createPaperPlane();
@@ -235,14 +110,6 @@ function animate() {
   // Update paper plane position
   paperPlane.position.add(velocity);
 
-  // Check for collisions
-  checkCollisions();
-
-  // Deactivate shield if time is up
-  if (isShieldActive && Date.now() > shieldEndTime) {
-    deactivateShield();
-  }
-
   // Render the scene
   renderer.render(scene, camera);
 }
@@ -255,8 +122,3 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
-
-// Debugging logs
-console.log("Camera position:", camera.position);
-console.log("Camera rotation:", camera.rotation);
-console.log("Scene children:", scene.children);
