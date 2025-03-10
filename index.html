@@ -5,7 +5,7 @@
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { width: 100%; height: 100%; display: block; position: absolute; top: 0; left: 0; }
-    #videoElement { position: absolute; top: 0; left: 0; width: 320px; height: 240px; display: none; } /* Hide the video */
+    #videoElement { position: absolute; top: 0; left: 0; width: 320px; height: 240px; display: none; }
   </style>
 </head>
 <body>
@@ -60,7 +60,6 @@
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       video.srcObject = stream;
       video.onloadedmetadata = () => {
-        // Video is now loaded, MediaPipe can start.
         detectHands();
       };
 
@@ -94,6 +93,10 @@
               -indexTip.z * 5
             );
 
+            console.log("isLifted:", isLifted);
+            console.log("threeDIndexTip:", threeDIndexTip);
+            console.log("sparkles:", sparkles);
+
             if (isLifted && !sparkles) {
               sparkles = createSparkles(threeDIndexTip);
             }
@@ -116,8 +119,10 @@
       const indexTipY = landmarks[8].y;
       const indexBaseY = landmarks[5].y;
       const threshold = 0.05;
+      const difference = indexBaseY - indexTipY;
+      console.log("Difference:", difference);
 
-      return indexTipY < indexBaseY - threshold;
+      return difference > threshold;
     }
 
     function createSparkles(position) {
@@ -137,7 +142,7 @@
         positions[i * 3 + 2] = z;
 
         const color = new THREE.Color();
-        color.setHSL(Math.random(), 1.0, 0.5); // Rainbow colors
+        color.setHSL(Math.random(), 1.0, 0.5);
         colors[i * 3] = color.r;
         colors[i * 3 + 1] = color.g;
         colors[i * 3 + 2] = color.b;
@@ -165,16 +170,16 @@
       if (!sparkles) return;
       sparkles.material.opacity -= 0.01;
       if (sparkles.material.opacity <= 0) {
-          removeSparkles();
+        removeSparkles();
       }
     }
 
-    function removeSparkles(){
-        if(sparkles){
-            scene.remove(sparkles);
-            sparkles = null;
-        }
+    function removeSparkles() {
+      if (sparkles) {
+        scene.remove(sparkles);
+        sparkles = null;
+      }
     }
   </script>
 </body>
-  </html>
+</html>
