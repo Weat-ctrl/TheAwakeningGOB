@@ -1,25 +1,107 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Paper Plane Game</title>
+  <title>MediaPipe Hand Landmarker (Back Camera)</title>
   <style>
-    body { margin: 0; overflow: hidden; }
-    canvas { display: block; }
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #videoElement {
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+    }
+    #canvasElement {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+    }
   </style>
 </head>
 <body>
-  <!-- Load Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/build/three.min.js"></script>
+  <video id="videoElement" autoplay playsinline></video>
+  <canvas id="canvasElement"></canvas>
 
-  <!-- Load MediaPipe dependencies -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/gesture_recognizer/gesture_recognizer.js"></script>
+  <script type="module">
+    import {
+      FilesetResolver,
+      HandLandmarker,
+      DrawingUtils
+    } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest";
 
-  <!-- Load your script -->
-  <script src="script.js"></script>
+    async function runHandLandmarker() {
+      const video = document.getElementById("videoElement");
+      const canvas = document.getElementById("canvasElement");
+      const canvasCtx = canvas.getContext("2d");
+      const drawingUtils = new DrawingUtils(canvasCtx);
+
+      // Camera setup
+      const constraints = {
+        video: { facingMode: { exact: "environment" } },
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+      };
+
+      try {
+        console.log("Starting FilesetResolver load");
+        const filesetResolver = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+        );
+        console.log("FilesetResolver loaded");
+
+        console.log("Starting model load");
+        const handLandmarker = await HandLandmarker.createFromOptions(
+          filesetResolver,
+          {
+            baseOptions: {
+              modelAssetPath: `https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task`,
+              delegate: "GPU",
+            },
+            numHands: 1,
+            runningMode: "VIDEO",
+          }
+        );
+        console.log("Model loaded successfully");
+
+        async function detectHands() {
+          if (video.readyState >= 2) {
+            const results = handLandmarker.detectForVideo(video, Date.now());
+
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            if (results.landmarks) {
+              for (const landmarks of results.landmarks) {
+                drawingUtils.drawConnectors(
+                  landmarks,
+                  HandLandmarker.HAND_CONNECTIONS,
+                  { color: "#00FF00", lineWidth: 5 }
+                );
+                drawingUtils.drawLandmarks(landmarks, {
+                  color: "#FF0000",
+                  lineWidth: 2,
+                });
+              }
+            }
+            canvasCtx.restore();
+          }
+          window.requestAnimationFrame(detectHands);
+        }
+
+        detectHands();
+
+      } catch (error) {
+        console.error("Error in Hand Landmarker setup:", error);
+      }
+    }
+
+    runHandLandmarker();
+  </script>
 </body>
   </html>
