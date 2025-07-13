@@ -1,124 +1,100 @@
-// Set up Three.js scene
+import * as THREE from 'https://unpkg.com/three@0.165.0/build/three.module.js';
+
+// --- Scene Setup ---
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+scene.background = new THREE.Color(0xcccccc); // Light grey background
+
+// --- Camera Setup (Orthogonal for Isometric View) ---
+const aspectRatio = window.innerWidth / window.innerHeight;
+const frustumSize = 10; // Adjust this value to control the "zoom" level
+
+const camera = new THREE.OrthographicCamera(
+    frustumSize * aspectRatio / -2,
+    frustumSize * aspectRatio / 2,
+    frustumSize / 2,
+    frustumSize / -2,
+    0.1, // Near clipping plane
+    1000 // Far clipping plane
+);
+
+// Position the camera for an isometric view
+camera.position.set(10, 10, 10); // Adjust as needed
+camera.lookAt(0, 0, 0); // Point towards the origin
+
+// --- Renderer Setup ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-// Add lighting
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(1, 1, 1).normalize();
-scene.add(light);
+// --- Lighting ---
+// Ambient light to provide overall illumination
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Softer white light
+scene.add(ambientLight);
 
-// Variables
-let paperPlane;
-let obstacles = [];
-let energySpheres = [];
-let lives = 3;
-let isGameOver = false;
-let velocity = new THREE.Vector3(0, 0, -0.1);
-const gravity = new THREE.Vector3(0, -0.005, 0);
-const liftForce = new THREE.Vector3(0, 0.01, 0);
-let isShieldActive = false;
-let shieldEndTime = 0;
+// Directional light to cast shadows and define direction
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+directionalLight.position.set(5, 10, 7.5); // Position of the light source
+directionalLight.castShadow = true; // Enable shadow casting for this light
+scene.add(directionalLight);
 
-// Paper-style material
-const paperMaterial = new THREE.MeshStandardMaterial({
-  color: 0xf0f0f0, // Light gray for paper
-  roughness: 0.8, // Matte finish
-  metalness: 0, // Non-metallic
+// --- Load Textures ---
+const textureLoader = new THREE.TextureLoader();
+
+const floorTextureUrl = 'https://weat-ctrl.github.io/TheAwakeningGOB/floor/floor.png';
+const normalMapUrl = 'https://weat-ctrl.github.io/TheAwakeningGOB/floor/NormalMap.png';
+const specularMapUrl = 'https://weat-ctrl.github.io/TheAwakeningGOB/floor/SpecularMap.png';
+const aoMapUrl = 'https://weat-ctrl.github.io/TheAwakeningGOB/floor/AmbientOcclusionMap.png';
+
+const floorTexture = textureLoader.load(floorTextureUrl);
+const normalMap = textureLoader.load(normalMapUrl);
+const specularMap = textureLoader.load(specularMapUrl);
+const aoMap = textureLoader.load(aoMapUrl);
+
+// Optional: Repeat textures if your plane is larger than the texture resolution
+floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+specularMap.wrapS = specularMap.wrapT = THREE.RepeatWrapping;
+aoMap.wrapS = aoMap.wrapT = THREE.RepeatWrapping;
+
+const repeatX = 5; // How many times to repeat the texture along X
+const repeatY = 5; // How many times to repeat the texture along Y
+floorTexture.repeat.set(repeatX, repeatY);
+normalMap.repeat.set(repeatX, repeatY);
+specularMap.repeat.set(repeatX, repeatY);
+aoMap.repeat.set(repeatX, repeatY);
+
+
+// --- Floor Plane ---
+const planeGeometry = new THREE.PlaneGeometry(20, 20); // Adjust size as needed
+const planeMaterial = new THREE.MeshStandardMaterial({
+    map: floorTexture,
+    normalMap: normalMap,
+    specularMap: specularMap, // For MeshStandardMaterial, specularMap can be used like roughnessMap or metalnessMap depending on desired effect and other maps. However, it's often better to use a dedicated roughness/metalness map if available.
+    aoMap: aoMap,
+    aoMapIntensity: 1.0, // Adjust intensity of ambient occlusion
+    side: THREE.DoubleSide // Ensure both sides of the plane are visible
 });
 
-// Create the paper plane
-function createPaperPlane() {
-  const geometry = new THREE.BufferGeometry();
-  const vertices = new Float32Array([
-    0, 0.5, 0,  // Top vertex
-    -0.5, -0.5, 0, // Bottom-left vertex
-    0.5, -0.5, 0,  // Bottom-right vertex
-  ]);
-  geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-  const indices = new Uint16Array([0, 1, 2]);
-  geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+const floor = new THREE.Mesh(planeGeometry, planeMaterial);
+floor.rotation.x = -Math.PI / 2; // Rotate to lay flat on the XZ plane
+floor.receiveShadow = true; // Allow the floor to receive shadows
+scene.add(floor);
 
-  paperPlane = new THREE.Mesh(geometry, paperMaterial);
-  paperPlane.position.set(0, 0, 5); // Start position
-  scene.add(paperPlane);
-  console.log("Paper plane added to scene");
-}
-
-// Create procedural obstacles
-function createObstacle() {
-  const geometry = new THREE.TorusKnotGeometry(1, 0.4, 100, 16);
-  const obstacle = new THREE.Mesh(geometry, paperMaterial);
-  obstacle.position.set(
-    (Math.random() - 0.5) * 10, // Random X position
-    (Math.random() - 0.5) * 10, // Random Y position
-    -20 // Start behind the camera
-  );
-  obstacles.push(obstacle);
-  scene.add(obstacle);
-  console.log("Obstacle added to scene");
-}
-
-// Create energy spheres
-function createEnergySphere() {
-  const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-  const sphere = new THREE.Mesh(geometry, paperMaterial);
-  sphere.position.set(
-    (Math.random() - 0.5) * 10, // Random X position
-    (Math.random() - 0.5) * 10, // Random Y position
-    -20 // Start behind the camera
-  );
-  energySpheres.push(sphere);
-  scene.add(sphere);
-  console.log("Energy sphere added to scene");
-}
-
-// Initialize MediaPipe Gesture Recognizer
-const gestureRecognizer = new GestureRecognizer({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/gesture_recognizer/${file}`,
-});
-
-gestureRecognizer.setOptions({
-  maxNumHands: 1,
-  modelComplexity: 0,
-  minDetectionConfidence: 0.5,
-  minTrackingConfidence: 0.5,
-});
-
-gestureRecognizer.onResults((results) => {
-  console.log("Gesture results:", results);
-  onResults(results);
-});
-
-console.log("Gesture Recognizer initialized:", gestureRecognizer);
-
-// Start the game
-createPaperPlane();
-for (let i = 0; i < 5; i++) {
-  createObstacle();
-  createEnergySphere();
-}
-
-// Render loop
+// --- Animation Loop ---
 function animate() {
-  if (isGameOver) return;
-
-  requestAnimationFrame(animate);
-
-  // Update paper plane position
-  paperPlane.position.add(velocity);
-
-  // Render the scene
-  renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+    renderer.render(scene, camera);
 }
-
 animate();
 
-// Handle window resizing
+// --- Handle Window Resizing ---
 window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+    const newAspectRatio = window.innerWidth / window.innerHeight;
+    camera.left = frustumSize * newAspectRatio / -2;
+    camera.right = frustumSize * newAspectRatio / 2;
+    camera.top = frustumSize / 2;
+    camera.bottom = frustumSize / -2;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
 });
