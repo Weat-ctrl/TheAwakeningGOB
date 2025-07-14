@@ -7,7 +7,7 @@ scene.background = new THREE.Color(0xcccccc);
 
 // --- Camera Setup (Orthogonal for Isometric View) ---
 const aspectRatio = window.innerWidth / window.innerHeight;
-let frustumSize = 10;
+let frustumSize = 25;
 
 const camera = new THREE.OrthographicCamera(
     frustumSize * aspectRatio / -2,
