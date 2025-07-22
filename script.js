@@ -125,7 +125,7 @@ const floorTexture = textureLoader.load(floorTextureUrl);
 const normalMap = textureLoader.load(normalMapUrl);
 const aoMap = textureLoader.load(aoMapUrl);
 
-// Crucial: Set flipY to false immediately after loading for all textures that might be flipped
+// Explicitly set flipY to false for floor textures for consistency
 floorTexture.flipY = false;
 normalMap.flipY = false;
 aoMap.flipY = false;
@@ -171,12 +171,11 @@ const baseRuinWidth = 2.5; // Base dimensions for the ruins (adjust as needed)
 const baseRuinHeight = 3.5;
 
 function addRuin(textureUrl, width, height, positionX, positionZ, rotationY = 0) {
-    // Texture loading for ruins also uses the loadingManager implicitly
     const ruinMap = textureLoader.load(textureUrl);
 
-    // CRUCIAL: Set flipY to false immediately after loading and before setting encoding
-    ruinMap.flipY = false;
-    ruinMap.encoding = THREE.sRGBEncoding; // Set encoding after flipY
+    // No need for ruinMap.flipY = false if we're rotating the geometry
+    // ruinMap.flipY = false; // <--- REMOVED THIS LINE
+    ruinMap.encoding = THREE.sRGBEncoding;
 
     const ruinMaterial = new THREE.MeshStandardMaterial({
         map: ruinMap,
@@ -186,10 +185,12 @@ function addRuin(textureUrl, width, height, positionX, positionZ, rotationY = 0)
     });
 
     const ruinGeometry = new THREE.PlaneGeometry(width, height);
+    ruinGeometry.rotateY(Math.PI); // <--- ADDED THIS LINE to flip the geometry 180 degrees
+
     const ruin = new THREE.Mesh(ruinGeometry, ruinMaterial);
 
     ruin.position.set(positionX, height / 2, positionZ); // Y is half height to sit on floor
-    ruin.rotation.y = rotationY;
+    ruin.rotation.y = rotationY; // This rotation is applied ON TOP of the geometry's 180-degree flip
 
     ruin.castShadow = true;
     ruin.receiveShadow = true;
