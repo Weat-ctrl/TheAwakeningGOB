@@ -165,6 +165,7 @@ const baseRuinHeight = 3.5;
 function addRuin(textureUrl, width, height, positionX, positionZ, rotationY = 0) {
     // Texture loading for ruins also uses the loadingManager implicitly
     const ruinMap = textureLoader.load(textureUrl);
+    ruinMap.flipY = false;
 
     ruinMap.encoding = THREE.sRGBEncoding;
     ruinMap.flipY = false;
