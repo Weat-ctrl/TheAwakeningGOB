@@ -84,7 +84,7 @@ const totalItemsSpan = document.getElementById('total-items');
 
 loadingManager.onStart = function ( url, itemsLoaded, itemsTotal ) {
 	console.log( 'Started loading file: ' + url + '.\nLoaded ' + itemsLoaded + ' of ' + itemsTotal + ' files.' );
-    loadingScreen.style.display = 'flex'; // Show loading screen
+    loadingScreen.style.display = 'flex'; // Ensure loading screen is visible
     loadedItemsSpan.textContent = itemsLoaded;
     totalItemsSpan.textContent = itemsTotal;
 };
@@ -97,14 +97,17 @@ loadingManager.onProgress = function ( url, itemsLoaded, itemsTotal ) {
     totalItemsSpan.textContent = itemsTotal;
 };
 
+// This function is now the start point for our animation loop
 loadingManager.onLoad = function ( ) {
-	console.log( 'Loading Complete!' );
+	console.log( 'Loading Complete! Starting animation loop.' );
     // Animate the loading screen fading out
     loadingScreen.style.transition = 'opacity 1s ease-out';
     loadingScreen.style.opacity = '0';
     setTimeout(() => {
         loadingScreen.style.display = 'none'; // Hide after transition
     }, 1000);
+
+    animate(); // Start the main animation loop here
 };
 
 loadingManager.onError = function ( url ) {
@@ -121,6 +124,11 @@ const aoMapUrl = 'https://weat-ctrl.github.io/TheAwakeningGOB/floor/AmbientOcclu
 const floorTexture = textureLoader.load(floorTextureUrl);
 const normalMap = textureLoader.load(normalMapUrl);
 const aoMap = textureLoader.load(aoMapUrl);
+
+// Crucial: Set flipY to false immediately after loading for all textures that might be flipped
+floorTexture.flipY = false;
+normalMap.flipY = false;
+aoMap.flipY = false;
 
 floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
 normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
@@ -165,10 +173,10 @@ const baseRuinHeight = 3.5;
 function addRuin(textureUrl, width, height, positionX, positionZ, rotationY = 0) {
     // Texture loading for ruins also uses the loadingManager implicitly
     const ruinMap = textureLoader.load(textureUrl);
-    ruinMap.flipY = false;
 
-    ruinMap.encoding = THREE.sRGBEncoding;
+    // CRUCIAL: Set flipY to false immediately after loading and before setting encoding
     ruinMap.flipY = false;
+    ruinMap.encoding = THREE.sRGBEncoding; // Set encoding after flipY
 
     const ruinMaterial = new THREE.MeshStandardMaterial({
         map: ruinMap,
@@ -258,14 +266,10 @@ function addCharacter(x, z, materialColor) {
 }
 
 // Add test characters to demonstrate depth sorting relative to ruins
-// Place one character 'behind' a ruin and one 'in front'
 // You'll need to manually adjust their Z positions to test against specific ruin placements
 addCharacter(0, -2, 0xff0000); // Red character at (0, -2)
 addCharacter(2, 0, 0x0000ff);  // Blue character at (2, 0)
 addCharacter(-3, 1, 0x00ff00); // Green character at (-3, 1)
-
-// You can interactively test by dragging characters (if you had a mechanism)
-// or just observe initial placement relative to the closest ruin.
 
 
 // --- Animation Loop ---
@@ -275,19 +279,6 @@ function animate() {
     renderer.render(scene, camera);
 }
 
-// Only start the animation loop once all initial assets are loaded
-// This ensures that `controls` and `renderer` are fully set up.
-loadingManager.onLoad = function () {
-    console.log('All assets loaded. Starting animation loop.');
-    // Hide loading screen
-    loadingScreen.style.transition = 'opacity 1s ease-out';
-    loadingScreen.style.opacity = '0';
-    setTimeout(() => {
-        loadingScreen.style.display = 'none';
-    }, 1000);
-
-    animate(); // Start the main animation loop
-};
 
 // --- Handle Window Resizing ---
 window.addEventListener('resize', () => {
